@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Scavenger Hunt</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; max-width: 600px; margin: auto; }
+    input, button { padding: 10px; width: 100%; margin: 10px 0; }
+    #message { color: green; }
+  </style>
+</head>
+<body>
+  <h1>Scavenger Hunt Task</h1>
+  <p><strong>Task:</strong> Take a selfie near the fountain.</p>
+
+  <input type="text" id="teamName" placeholder="Enter your team name" />
+  <input type="file" id="photoInput" accept="image/*" />
+  <button onclick="submitPhoto()">Submit</button>
+
+  <p id="message"></p>
+
+  <script>
+    // 🔑 Your Firebase config here:
+    const firebaseConfig = {
+  apiKey: "AIzaSyDxWfaP6Z6K...",
+  authDomain: "testgame.firebaseapp.com",
+  projectId: "testgame2025",
+  storageBucket: "testgame.appspot.com",
+  messagingSenderId: "123456789012",
+  appId: "1:123456789012:web:abcd1234efgh5678"
+};
+
+    firebase.initializeApp(firebaseConfig);
+    const storage = firebase.storage();
+    const db = firebase.firestore();
+
+    async function submitPhoto() {
+      const fileInput = document.getElementById("photoInput");
+      const teamName = document.getElementById("teamName").value.trim();
+      const file = fileInput.files[0];
+
+      if (!teamName || !file) {
+        document.getElementById("message").innerText = "Please fill in all fields.";
+        return;
+      }
+
+      const fileRef = storage.ref().child(`submissions/${teamName}_${Date.now()}.jpg`);
+      await fileRef.put(file);
+      const url = await fileRef.getDownloadURL();
+
+      await db.collection("submissions").add({
+        team: teamName,
+        photoURL: url,
+        task: "Fountain Selfie",
+        approved: false,
+        points: 0,
+        timestamp: new Date()
+      });
+
+      document.getElementById("message").innerText = "Submitted! Awaiting approval.";
+      fileInput.value = '';
+      document.getElementById("teamName").value = '';
+    }
+  </script>
+</body>
+</html>
