@@ -41,6 +41,9 @@
       background: #aaa;
       cursor: not-allowed;
     }
+    input:disabled {
+      background: #eee;
+    }
     .status {
       color: green;
       font-weight: bold;
@@ -72,7 +75,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
 
   <script>
-    // Your Firebase config here (replace with your own)
     const firebaseConfig = {
       apiKey: "AIzaSyAGotRFJR-p_NPFQNSKuhDJiyeQTpuFA3k",
       authDomain: "test-game-73230.firebaseapp.com",
@@ -82,44 +84,21 @@
       appId: "1:849487663972:web:a597020bec0c21e84ea071"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const storage = firebase.storage();
     const db = firebase.firestore();
 
-    // Tasks data - mix of riddles and photo tasks
     const tasks = [
-      {
-        id: 1,
-        type: 'riddle',
-        description: 'I speak without a mouth and hear without ears. What am I?'
-      },
-      {
-        id: 2,
-        type: 'photo',
-        description: 'Find a red flower and take a picture with it.'
-      },
-      {
-        id: 3,
-        type: 'riddle',
-        description: 'What has keys but can’t open locks?'
-      },
-      {
-        id: 4,
-        type: 'photo',
-        description: 'Take a photo with a park bench.'
-      },
-      {
-        id: 5,
-        type: 'riddle',
-        description: 'The more you take, the more you leave behind. What am I?'
-      }
+      { id: 1, type: 'riddle', description: 'I speak without a mouth and hear without ears. What am I?' },
+      { id: 2, type: 'photo', description: 'Find a red flower and take a picture with it.' },
+      { id: 3, type: 'riddle', description: 'What has keys but can’t open locks?' },
+      { id: 4, type: 'photo', description: 'Take a photo with a park bench.' },
+      { id: 5, type: 'riddle', description: 'The more you take, the more you leave behind. What am I?' }
     ];
 
     const tasksContainer = document.getElementById('tasksContainer');
     const teamSelect = document.getElementById('teamSelect');
 
-    // Render tasks
     function renderTasks() {
       tasksContainer.innerHTML = '';
       tasks.forEach(task => {
@@ -131,19 +110,19 @@
           <form id="form-task-${task.id}">
             ${
               task.type === 'riddle'
-                ? `<input type="text" name="answer" placeholder="Enter your answer" required />`
-                : `<input type="file" name="photo" accept="image/*" required />`
+                ? `<input type="text" name="answer" placeholder="Enter your answer" required disabled />`
+                : `<input type="file" name="photo" accept="image/*" required disabled />`
             }
-            <button type="submit">Submit</button>
+            <button type="submit" disabled>Submit</button>
             <p class="status" id="status-task-${task.id}"></p>
           </form>
         `;
         tasksContainer.appendChild(div);
 
-        // Add submit listener
         const form = document.getElementById(`form-task-${task.id}`);
         form.addEventListener('submit', async e => {
           e.preventDefault();
+
           const teamName = teamSelect.value;
           if (!teamName) {
             alert('Please select your team before submitting.');
@@ -152,6 +131,7 @@
 
           const statusEl = document.getElementById(`status-task-${task.id}`);
           statusEl.textContent = '';
+          statusEl.classList.remove('error');
           const submitBtn = form.querySelector('button[type="submit"]');
           submitBtn.disabled = true;
 
@@ -160,7 +140,6 @@
               const answer = form.answer.value.trim();
               if (!answer) throw new Error('Answer cannot be empty.');
 
-              // Save answer to Firestore
               await db.collection('submissions').add({
                 team: teamName,
                 taskId: task.id,
@@ -169,7 +148,6 @@
                 approved: false,
                 submittedAt: new Date()
               });
-
             } else {
               const file = form.photo.files[0];
               if (!file) throw new Error('Please select a photo.');
@@ -178,7 +156,6 @@
               await storageRef.put(file);
               const downloadURL = await storageRef.getDownloadURL();
 
-              // Save photo URL to Firestore
               await db.collection('submissions').add({
                 team: teamName,
                 taskId: task.id,
@@ -201,6 +178,23 @@
         });
       });
     }
+
+    // Enable/disable forms based on team selection
+    function toggleForms(enabled) {
+      tasks.forEach(task => {
+        const form = document.getElementById(`form-task-${task.id}`);
+        if (!form) return;
+        const inputs = form.querySelectorAll('input, button');
+        inputs.forEach(input => {
+          input.disabled = !enabled;
+        });
+      });
+    }
+
+    teamSelect.addEventListener('change', () => {
+      const teamSelected = teamSelect.value !== '';
+      toggleForms(teamSelected);
+    });
 
     renderTasks();
   </script>
