@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard - Scavenger Hunt</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 2rem;
+      max-width: 1000px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+    }
+    .submission {
+      background: white;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 8px;
+      border-left: 5px solid #007bff;
+    }
+    .submission p {
+      margin: 0.5rem 0;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 4px;
+      margin-top: 0.5rem;
+    }
+    .buttons {
+      margin-top: 1rem;
+    }
+    button {
+      margin-right: 10px;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+    }
+    .approve {
+      background-color: #28a745;
+      color: white;
+    }
+    .reject {
+      background-color: #dc3545;
+      color: white;
+    }
+    .status {
+      font-weight: bold;
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Admin Dashboard - Scavenger Hunt</h1>
+  <div id="submissionsContainer">Loading submissions...</div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAGotRFJR-p_NPFQNSKuhDJiyeQTpuFA3k",
+      authDomain: "test-game-73230.firebaseapp.com",
+      projectId: "test-game-73230",
+      storageBucket: "test-game-73230.appspot.com",
+      messagingSenderId: "849487663972",
+      appId: "1:849487663972:web:a597020bec0c21e84ea071"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const container = document.getElementById('submissionsContainer');
+
+    async function loadSubmissions() {
+      container.innerHTML = 'Loading...';
+      const snapshot = await db.collection('submissions').orderBy('submittedAt', 'desc').get();
+
+      if (snapshot.empty) {
+        container.innerHTML = '<p>No submissions yet.</p>';
+        return;
+      }
+
+      container.innerHTML = '';
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const div = document.createElement('div');
+        div.className = 'submission';
+
+        div.innerHTML = `
+          <p><strong>Team:</strong> ${data.team}</p>
+          <p><strong>Task ID:</strong> ${data.taskId}</p>
+          <p><strong>Type:</strong> ${data.type}</p>
+          ${data.type === 'riddle'
+            ? `<p><strong>Answer:</strong> ${data.answer}</p>`
+            : `<img src="${data.imageUrl}" alt="Uploaded Photo" />`
+          }
+          <p><strong>Submitted At:</strong> ${data.submittedAt.toDate().toLocaleString()}</p>
+          <p class="status"><strong>Status:</strong> ${data.approved ? '✅ Approved' : '❌ Not Approved'}</p>
+          <div class="buttons">
+            <button class="approve">Approve</button>
+            <button class="reject">Reject</button>
+          </div>
+        `;
+
+        const approveBtn = div.querySelector('.approve');
+        const rejectBtn = div.querySelector('.reject');
+        const statusEl = div.querySelector('.status');
+
+        approveBtn.onclick = async () => {
+          await db.collection('submissions').doc(doc.id).update({ approved: true });
+          statusEl.innerHTML = '<strong>Status:</strong> ✅ Approved';
+        };
+
+        rejectBtn.onclick = async () => {
+          await db.collection('submissions').doc(doc.id).update({ approved: false });
+          statusEl.innerHTML = '<strong>Status:</strong> ❌ Not Approved';
+        };
+
+        container.appendChild(div);
+      });
+    }
+
+    loadSubmissions();
+  </script>
+</body>
+</html>
