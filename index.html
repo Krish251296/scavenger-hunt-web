@@ -69,12 +69,11 @@
 
   <div id="tasksContainer"></div>
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyAGotRFJR-p_NPFQNSKuhDJiyeQTpuFA3k",
       authDomain: "test-game-73230.firebaseapp.com",
@@ -84,9 +83,9 @@
       appId: "1:849487663972:web:a597020bec0c21e84ea071"
     };
 
-    firebase.initializeApp(firebaseConfig);
-    const storage = firebase.storage();
-    const db = firebase.firestore();
+    const app = initializeApp(firebaseConfig);
+    const storage = getStorage(app);
+    const db = getFirestore(app);
 
     const tasks = [
       { id: 1, type: 'riddle', description: 'I speak without a mouth and hear without ears. What am I?' },
@@ -140,7 +139,7 @@
               const answer = form.answer.value.trim();
               if (!answer) throw new Error('Answer cannot be empty.');
 
-              await db.collection('submissions').add({
+              await addDoc(collection(db, 'submissions'), {
                 team: teamName,
                 taskId: task.id,
                 type: 'riddle',
@@ -152,11 +151,11 @@
               const file = form.photo.files[0];
               if (!file) throw new Error('Please select a photo.');
 
-              const storageRef = storage.ref(`submissions/${teamName}/task_${task.id}_${Date.now()}_${file.name}`);
-              await storageRef.put(file);
-              const downloadURL = await storageRef.getDownloadURL();
+              const storageRef = ref(storage, `submissions/${teamName}/task_${task.id}_${Date.now()}_${file.name}`);
+              await uploadBytes(storageRef, file);
+              const downloadURL = await getDownloadURL(storageRef);
 
-              await db.collection('submissions').add({
+              await addDoc(collection(db, 'submissions'), {
                 team: teamName,
                 taskId: task.id,
                 type: 'photo',
