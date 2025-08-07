@@ -1,65 +1,72 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Scavenger Hunt</title>
+  <title>Scavenger Hunt Upload</title>
 </head>
 <body>
-  <h1>Welcome to the Office Scavenger Hunt!</h1>
-  <p>Upload your task photo here:</p>
+  <h2>Upload Task Photo</h2>
   <form id="uploadForm">
-    <input type="text" placeholder="Team Name" id="teamName" required /><br /><br />
-    <input type="file" id="photoInput" required /><br /><br />
-    <button type="submit">Submit</button>
+    <input type="text" id="teamName" placeholder="Team Name" required /><br />
+    <input type="file" id="photoUpload" accept="image/*" required /><br />
+    <button type="submit">Upload</button>
   </form>
-  <p id="message"></p>
 
-  <!-- Firebase scripts will go here -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <p id="statusMsg"></p>
+
+  <!-- Firebase SDKs via CDN -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+
   <script>
-    // TODO: Replace below with your actual Firebase config
+    // ✅ Your Firebase config
     const firebaseConfig = {
-  apiKey: "AIzaSy...yourKey",
-  authDomain: "Testgame.firebaseapp.com",
-  projectId: "Testgame",
-  storageBucket: "Testgame.appspot.com",
-  messagingSenderId: "12345678",
-  appId: "1:123456:web:abc123"
-};
+      apiKey: "AIzaSyAGotRFJR-p_NPFQNSKuhDJiyeQTpuFA3k",
+      authDomain: "test-game-73230.firebaseapp.com",
+      projectId: "test-game-73230",
+      storageBucket: "test-game-73230.appspot.com",
+      messagingSenderId: "849487663972",
+      appId: "1:849487663972:web:a597020bec0c21e84ea071"
+    };
 
-
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const storage = firebase.storage();
     const db = firebase.firestore();
 
-    const form = document.getElementById('uploadForm');
-    const photoInput = document.getElementById('photoInput');
-    const teamNameInput = document.getElementById('teamName');
-    const message = document.getElementById('message');
+    const uploadForm = document.getElementById('uploadForm');
+    const statusMsg = document.getElementById('statusMsg');
 
-    form.addEventListener('submit', async (e) => {
+    uploadForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const file = photoInput.files[0];
-      const team = teamNameInput.value;
-      if (!file || !team) return;
 
-      const storageRef = storage.ref('uploads/' + file.name);
-      await storageRef.put(file);
-      const photoURL = await storageRef.getDownloadURL();
+      const teamName = document.getElementById('teamName').value;
+      const file = document.getElementById('photoUpload').files[0];
 
-      await db.collection('submissions').add({
-        team,
-        photoURL,
-        task: "Task 1",
-        approved: false,
-        points: 0,
-        timestamp: new Date()
-      });
+      if (!file || !teamName) {
+        statusMsg.innerText = "Please fill in all fields.";
+        return;
+      }
 
-      message.innerText = "Submitted! Thank you.";
-      form.reset();
+      const storageRef = storage.ref(`submissions/${teamName}_${Date.now()}_${file.name}`);
+
+      try {
+        await storageRef.put(file);
+        const downloadURL = await storageRef.getDownloadURL();
+
+        await db.collection('submissions').add({
+          team: teamName,
+          imageUrl: downloadURL,
+          approved: false,
+          submittedAt: new Date()
+        });
+
+        statusMsg.innerText = "✅ Uploaded successfully!";
+        uploadForm.reset();
+      } catch (err) {
+        console.error(err);
+        statusMsg.innerText = "❌ Upload failed.";
+      }
     });
   </script>
 </body>
