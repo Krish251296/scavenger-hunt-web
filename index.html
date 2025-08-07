@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Scavenger Hunt</title>
+</head>
+<body>
+  <h1>Welcome to the Office Scavenger Hunt!</h1>
+  <p>Upload your task photo here:</p>
+  <form id="uploadForm">
+    <input type="text" placeholder="Team Name" id="teamName" required /><br /><br />
+    <input type="file" id="photoInput" required /><br /><br />
+    <button type="submit">Submit</button>
+  </form>
+  <p id="message"></p>
+
+  <!-- Firebase scripts will go here -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script>
+    // TODO: Replace below with your actual Firebase config
+    const firebaseConfig = {
+  apiKey: "AIzaSy...yourKey",
+  authDomain: "Testgame.firebaseapp.com",
+  projectId: "Testgame",
+  storageBucket: "Testgame.appspot.com",
+  messagingSenderId: "12345678",
+  appId: "1:123456:web:abc123"
+};
+
+
+    firebase.initializeApp(firebaseConfig);
+    const storage = firebase.storage();
+    const db = firebase.firestore();
+
+    const form = document.getElementById('uploadForm');
+    const photoInput = document.getElementById('photoInput');
+    const teamNameInput = document.getElementById('teamName');
+    const message = document.getElementById('message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const file = photoInput.files[0];
+      const team = teamNameInput.value;
+      if (!file || !team) return;
+
+      const storageRef = storage.ref('uploads/' + file.name);
+      await storageRef.put(file);
+      const photoURL = await storageRef.getDownloadURL();
+
+      await db.collection('submissions').add({
+        team,
+        photoURL,
+        task: "Task 1",
+        approved: false,
+        points: 0,
+        timestamp: new Date()
+      });
+
+      message.innerText = "Submitted! Thank you.";
+      form.reset();
+    });
+  </script>
+</body>
+</html>
